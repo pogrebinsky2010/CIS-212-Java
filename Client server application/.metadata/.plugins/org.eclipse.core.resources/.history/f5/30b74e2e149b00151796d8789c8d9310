@@ -1,0 +1,144 @@
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.LinkedList;
+
+public class Server{
+	private static final int PORT = 12345;
+	private static LinkedList<Integer> Numbers = new LinkedList<Integer>();
+	private static String SHUTDOWN = "";
+	private static StringBuffer primeNumbers = new StringBuffer();
+	private static StringBuffer notJustPrimeNumbers = new StringBuffer();
+	
+	
+	public static void main(String[] args) {
+
+		try {
+
+			ServerSocket serverSocket = new ServerSocket(PORT);
+			boolean srvRunning = true;
+
+			while(srvRunning)
+			{
+			Socket socket = null;
+			ObjectInputStream inputStream = null;
+			ObjectOutputStream outputStream = null;
+			try {
+
+				System.out.println("waiting for connection");
+
+				socket = serverSocket.accept();
+
+				System.out.println("accepted connection");
+
+				outputStream = new ObjectOutputStream(socket.getOutputStream());
+				outputStream.flush();
+
+				inputStream = new ObjectInputStream(socket.getInputStream());
+//
+//				outputStream.writeUTF("Server says hi!");
+//				outputStream.flush();
+				
+				boolean running = true;
+				System.out.println("before Server While loop");
+				while (running) {
+					System.out.println("After Server while");
+					String message = inputStream.readUTF();
+					if (message.equals("print")) {
+						notJustPrimeNumbers.append("client sent");
+						primeNumbers.append("Client recieved");
+
+						for (int i = 0; i < Numbers.size(); i++) {
+
+							notJustPrimeNumbers.append(Numbers.get(i) + ",");
+							if (isPrime(Numbers.get(i)) == true)
+								primeNumbers.append(Numbers.get(i));
+
+						}
+
+						outputStream.writeUTF(Numbers.toString());
+						outputStream.flush();
+
+						outputStream.writeUTF(primeNumbers.toString());
+						outputStream.flush();
+
+					}
+
+					else {
+						System.out.println("bob sucks");
+						
+						try {
+							if (message.equals(SHUTDOWN)) {
+								running = false;
+								break;
+
+							}
+
+							int clientint = Integer.parseInt(message);
+							Numbers.add(clientint);
+							outputStream.writeUTF(message);
+							outputStream.flush();
+
+							outputStream.writeUTF("BOB dole");
+							outputStream.flush();
+
+						}
+
+						catch (NumberFormatException ex) {
+							outputStream.writeUTF("Do not enter letters...only numbers.");
+							outputStream.flush();
+
+						}
+					}
+
+				}
+
+			}
+
+			catch (IOException ex) {
+				System.out.println("Dissconnected with " + ex);
+			}
+
+			finally {
+				if (inputStream != null) {
+					inputStream.close();
+				}
+
+				if (outputStream != null) {
+					outputStream.close();
+				}
+				if (socket != null) {
+					socket.close();
+				}
+
+			}
+			}
+			serverSocket.close();
+
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+
+	}
+
+	static boolean isPrime(int p) {
+		if (p == 1) {
+			return false;
+
+		}
+
+		for (int i = 2; i < p; i++) {
+			if (p % i == 0) 
+				return false;
+
+		}
+		return true;
+	}
+
+}
+
+
+
