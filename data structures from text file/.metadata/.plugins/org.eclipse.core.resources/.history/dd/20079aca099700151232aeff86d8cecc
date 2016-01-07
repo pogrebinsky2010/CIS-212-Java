@@ -1,0 +1,166 @@
+package hw5;
+
+import java.util.UUID;
+import java.util.Random;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+
+public class Main {
+	static String max1 = "0";
+	static String max2 = "0";
+	
+	public static final int BUFFER_SIZE = 100000;
+	public static final int COUNT = 5000000;
+	public static final int MAX_SLEEP_DELAY_MS = 10;
+	
+	static int count1;// used to keep track of how many items each consumer consumed** 
+	static int count2;
+	
+	
+	
+	public static void main(String[] args) {	
+		LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<String>(BUFFER_SIZE);
+		System.out.println("main method running on: " + Thread.currentThread().getName());
+		
+		
+		Producer producer = new Producer(queue);
+		Consumer consumer = new Consumer(queue, "consumer1 ");
+		Consumer consumer2 = new Consumer(queue, "consumer2 ");
+		
+		ExecutorService executor = Executors.newCachedThreadPool();
+		executor.execute(producer);
+		executor.execute(consumer);
+		executor.execute(consumer2);
+		executor.shutdown();
+		
+		System.out.println(Thread.currentThread().getName() + " finished!");
+	}
+	
+}
+	
+	class Producer implements Runnable {
+		private final LinkedBlockingQueue<String> _queue;
+		
+		public Producer(LinkedBlockingQueue<String> queue) {
+			_queue = queue;
+		}
+		
+		@Override
+		public synchronized void run() {
+			int count = 0;
+			
+			for (int i = 1; i != Main.COUNT + 1; ++i) {
+				if(i % 1000 == 0 ){
+
+				System.out.println("producing: " + i);
+				
+				}
+				
+					
+				try {
+					Thread.sleep((long) (2));
+					_queue.put(UUID.randomUUID().toString());
+					count++;
+
+					
+				} catch (InterruptedException ex) {
+					System.out.println("interrupted: " + ex);
+				}
+			}
+			
+			System.out.println("Producer Finished! " + count + " produced!" );
+			System.out.println("Consumer1 consumed: " + Main.count1 * 1000 );// multiply by 1000 b/c i only count every thousand strings consumed.
+			System.out.println("Consumer2 consumed: " + Main.count2 * 1000);
+			
+			
+			System.out.println(" The max value of Consumer 1 was: " + Main.max1);
+			System.out.println(  "The max value of Consumer 2 was " + Main.max2);
+		}
+	}
+	
+	class Consumer implements Runnable {
+		String n;
+		private final LinkedBlockingQueue<String> _queue;
+		String _string;
+		
+		public Consumer(LinkedBlockingQueue<String> queue, String string) {
+			
+				_queue = queue;
+				 _string = string;
+			}
+		
+		@Override
+		public synchronized void run() {
+			
+			
+			try {
+				Thread.sleep((long) (Main.MAX_SLEEP_DELAY_MS));
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+					for(int i = 1; i != Main.COUNT +1; i++)
+					{	
+							
+							
+							try {
+								  _queue.poll(1000, TimeUnit.MILLISECONDS);
+							} catch (InterruptedException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+						
+				
+						if(i % 1000 == 0  )
+						{
+									
+									if(Thread.currentThread().getName().compareTo("pool-1-thread-2")== 0)
+									{
+										Main.count1++;
+									}
+									else if(Thread.currentThread().getName().compareTo("pool-1-thread-3")== 0)
+									{
+										Main.count2++;
+									}
+									System.out.println(_string +  "consumed: " + i);
+							
+						}
+				
+		
+						
+							try {
+								
+							 Thread.sleep((long) (Main.MAX_SLEEP_DELAY_MS*Math.random()));
+								String string = _queue.take();
+								
+									
+									if (string.compareTo(Main.max1) > 0) {
+										if(Thread.currentThread().getName().compareTo("pool-1-thread-2")== 0)
+										{
+											Main.max1 = string;
+										}
+										else if(Thread.currentThread().getName().compareTo("pool-1-thread-3")== 0)
+										{
+											Main.max2 = string;
+										}
+									}
+			
+								} catch (InterruptedException e) {
+									System.out.println("Consumer ex");
+								}
+					}
+					System.out.println(_string + "consumed" +  _string.length() + " max value was " + Main.max1);
+					
+					
+					}
+			
+			
+		}
+		
+	
+	
+	
